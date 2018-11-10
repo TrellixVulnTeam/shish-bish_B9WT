@@ -49,8 +49,8 @@ def chooseMarker():
     #pass
     
     object = getOwner()
-    print(object.name)
-    print(object.position)
+    #print(object.name)
+    #print(object.position)
     
     order_move = pl.chooseDiceNum(dices)
     #print(order_move)
@@ -64,7 +64,7 @@ def chooseMarker():
         all_markers[i.name] = [round(i.position[0], 2), round(i.position[1], 2), round(i.position[2], 2)]
             
     new_pos = pl.Move(player_markers, all_markers).moveMarker(object.name, order_move['value_big'])
-    print(new_pos[object.name])
+    #print(new_pos[object.name])
     
     object.position = new_pos[object.name]
     #print("Mouse: ", controller.sensors["Mouse"].level)
