@@ -36,10 +36,32 @@ class Move:
 
         self.marker_in_wc = {1: [], 3: [], 6: []}
 
+        self.corners = [[self.bot_X_border, self.left_Y_border, self.Z],
+                        [self.top_X_border, self.left_Y_border, self.Z],
+                        [self.top_X_border, self.right_Y_border, self.Z],
+                        [self.bot_X_border, self.right_Y_border, self.Z]]
+
         self.marker_start = {'Green': [self.bot_X_border, round(self.right_Y_border + self.left_Y_border, 2), self.Z],
                              'Yellow': [round(self.top_X_border + self.bot_X_border, 2), self.left_Y_border, self.Z],
                              'Blue': [self.top_X_border, round(self.right_Y_border + self.left_Y_border, 2), self.Z],
                              'Red': [round(self.top_X_border + self.bot_X_border, 2), self.right_Y_border, self.Z]}
+
+        self.markers_home = {'Green': [[self.marker_start['Green'][0]+self.X_step, self.marker_start['Green'][1], self.Z],
+                                       [self.marker_start['Green'][0]+2*self.X_step, self.marker_start['Green'][1], self.Z],
+                                       [self.marker_start['Green'][0]+3*self.X_step, self.marker_start['Green'][1], self.Z],
+                                       [self.marker_start['Green'][0]+4*self.X_step, self.marker_start['Green'][1], self.Z]],
+                             'Yellow': [[self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]-self.Y_step, self.Z],
+                                        [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]-2*self.Y_step, self.Z],
+                                        [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]-3*self.Y_step, self.Z],
+                                        [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]-4*self.Y_step, self.Z]],
+                             'Blue': [[self.marker_start['Green'][0]-self.X_step, self.marker_start['Green'][1], self.Z],
+                                      [self.marker_start['Green'][0]-2*self.X_step, self.marker_start['Green'][1], self.Z],
+                                      [self.marker_start['Green'][0]-3*self.X_step, self.marker_start['Green'][1], self.Z],
+                                      [self.marker_start['Green'][0]-4*self.X_step, self.marker_start['Green'][1], self.Z]],
+                             'Red': [[self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]+self.Y_step, self.Z],
+                                     [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]+2*self.Y_step, self.Z],
+                                     [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]+3*self.Y_step, self.Z],
+                                     [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]+4*self.Y_step, self.Z]]}
 
         # self.wc_input = {'bot': [self.bot_X_border, round((self.right_Y_border + self.left_Y_border) + 3 * self.Y_step, 2), self.Z],
         #                  'left': [round((self.top_X_border + self.bot_X_border) + 3 * self.X_step, 2), self.left_Y_border, self.Z],
@@ -70,13 +92,15 @@ class Move:
         in_game = self.isMarkerInGame(marker)
         if in_game is True:
             self.setMarkerPos(marker, dice_num)
+            circle = 1
         else:
             if dice_num == 6:
                 marker_color = re.split(r'_', marker)
                 self.markers[marker] = self.marker_start[marker_color[0]]
+                circle = 0
 
         # self.setMarkerPos(marker, dice_num)
-        return self.markers
+        return (self.markers, circle)
     
     # Set new marker position. Need set move via stairs and wc input!!!
     def setMarkerPos(self, marker, dice_num):
@@ -92,6 +116,7 @@ class Move:
         new_pos = self.setRound(new_pos)
         new_pos = self.isPosInputWC(new_pos)
         self.getWCMarker()
+        new_pos = self.moveAcrossWC(marker, dice_num, new_pos)
         new_pos = self.isPosOnStairs(new_pos)
         if self.isWayFree(new_pos, dice_num, marker) is not False:
             self.markers[marker] = [new_pos[0], new_pos[1], self.Z]
@@ -250,39 +275,68 @@ class Move:
 
     # Detect way for free
     def isWayFree(self, new_pos, dice_num, marker):
-        points = self.createArrayOfPoints(new_pos, dice_num, marker)
-        # for i in list(self.all_markers.keys()):
-        #     if round(self.all_markers[i][0], 2) in points[0] and round(self.all_markers[i][1], 2) in points[1]:
-        #         return False
-        #
-        # for i in list(self.markers.keys()):
-        #     if round(self.markers[i][0], 2) == new_pos[0] and round(self.markers[i][1], 2) == new_pos[1]:
-        #         return False
+        points = self.chooseWay(new_pos, dice_num, marker)
         print(points)
         for i in list(self.all_markers.keys()):
             for j in range(len(points[0])):
-                if self.nearlyEqual(self.all_markers[j][0], points[0][j]) is True and \
-                    self.nearlyEqual(self.all_markers[j][1], points[1][j]):
+                if self.nearlyEqual(self.all_markers[i][0], points[0][j]) is True and \
+                        self.nearlyEqual(self.all_markers[i][1], points[1][j]):
                     return False
 
         for i in list(self.markers.keys()):
             if self.nearlyEqual(self.markers[i][0], new_pos[0]) is True and \
-                self.nearlyEqual(self.markers[i][1], new_pos[1]) is True:
+                    self.nearlyEqual(self.markers[i][1], new_pos[1]) is True:
                 return False
 
+    def chooseWay(self, new_pos, dice_num, marker):
+        if self.chooseLogicForArray(marker) is True:
+            points = self.moveAcrossWC(marker, dice_num, new_pos)
+            points = [[points[0]], [points[1]]]
+            return points
+        else:
+            points = self.createArrayOfPoints(new_pos, dice_num, marker)
+            return points
 
     # Create array of points that between old and new position
     def createArrayOfPoints(self, new_pos, dice_num, marker):
         operator = self.getOperator(self.markers[marker][0], self.markers[marker][1])
         points = [[], []]
-        
+        if self.nearlyEqual(new_pos[0], self.markers[marker][0]) is True:
+            for i in range(1, dice_num+1):
+                points[1].append(self.markers[marker][1] + operator[1] * i * self.Y_step)
+                points[0].append(self.markers[marker][0])
+        elif self.nearlyEqual(new_pos[1], self.markers[marker][1]) is True:
+            for i in range(dice_num):
+                points[0].append(self.markers[marker][0] + operator[0] * i * self.X_step)
+                points[1].append(self.markers[marker][1])
+        else:
+            for i in range(1, dice_num+1):
+                if self.top_X_border < self.markers[marker][0] + operator[0] * i * self.X_step < self.bot_X_border:
+                    if len(points[1]) == 0:
+                        points[1].append(self.markers[marker][1] + operator[1] * self.Y_step)
+                        points[0].append(self.markers[marker][0])
+                    else:
+                        points[1].append(points[1][-1] + operator[1] * self.Y_step)
+                        points[0].append(self.markers[marker][0])
+                elif self.right_Y_border < self.markers[marker][1] + operator[1] * i * self.Y_step < self.left_Y_border:
+                    if len(points[0]) == 0:
+                        points[0].append(self.markers[marker][0] + operator[0] * self.X_step)
+                        points[1].append(self.markers[marker][1])
+                    else:
+                        points[0].append(points[0][-1] + operator[0] * self.X_step)
+                        points[1].append(self.markers[marker][1])
 
         return points
+
+    def chooseLogicForArray(self, marker):
+        for i in list(self.marker_in_wc.keys()):
+            if marker in self.marker_in_wc[i]:
+                return True
 
     def isBitEnemyMarker(self, new_pos):
         for i in list(self.all_markers.keys()):
             if i not in list(self.markers.keys()):
-                if round(self.all_markers[i][0], 2) == new_pos[0] and round(self.all_markers[i][1], 2) == new_pos[1]:
+                if self.nearlyEqual(self.all_markers[i][0], new_pos[0]) is True and self.nearlyEqual(self.all_markers[i][1], new_pos[1]):
                     return True
 
     def isPosChange(self, new_pos, marker):
@@ -297,7 +351,7 @@ class Move:
         #         if i == 'bot' or i == 'top':
         #             new_pos[0] = new_pos[0] + operator[0] * self.X_step
         #         elif i == 'left' or i == 'right':
-        #             new_pos[1] = new_pos[1] + operator[1] * self.Y_step
+        #             `[1] = new_pos[1] + operator[1] * self.Y_step
         for i in list(self.wc_input.keys()):
             if self.nearlyEqual(new_pos[0], self.wc_input[i][0]) is True and self.nearlyEqual(new_pos[1], self.wc_input[i][1]) is True:
                 if i == 'bot' or i == 'top':
@@ -359,6 +413,50 @@ class Move:
                         self.nearlyEqual(self.markers[marker][1], self.wc_coord[i][j][1]) is True:
                     # print(marker)
                     return True
+
+    def moveAcrossWC(self, marker, dice_num, new_pos):
+        if dice_num in list(self.marker_in_wc.keys()):
+            for i in list(self.wc_coord[dice_num].keys()):
+                if self.nearlyEqual(self.markers[marker][0], self.wc_coord[dice_num][i][0]) is True and \
+                        self.nearlyEqual(self.markers[marker][1], self.wc_coord[dice_num][i][1]) is True:
+                    if dice_num == 1:
+                        new_pos = [self.wc_coord[3][i][0], self.wc_coord[3][i][1]]
+                        break
+                    elif dice_num == 3:
+                        new_pos = [self.wc_coord[6][i][0], self.wc_coord[6][i][1]]
+                        break
+                    elif dice_num == 6:
+                        wc_out = self.setWCOut()
+                        new_pos = [wc_out[i][0], wc_out[i][1]]
+
+        return new_pos
+
+    def setWCOut(self):
+        wc_out = {'top': [],
+                  'bot': [],
+                  'left': [],
+                  'right': []}
+        for i in list(self.wc_coord[6].keys()):
+            if 'top' == i:
+                wc_out[i] = [self.wc_coord[6][i][0] + self.X_step, self.wc_coord[6][i][1], self.Z]
+            elif 'bot' == i:
+                wc_out[i] = [self.wc_coord[6][i][0] - self.X_step, self.wc_coord[6][i][1], self.Z]
+            elif 'left' == i:
+                wc_out[i] = [self.wc_coord[6][i][0], self.wc_coord[6][i][1] + self.Y_step, self.Z]
+            elif 'right' == i:
+                wc_out[i] = [self.wc_coord[6][i][0], self.wc_coord[6][i][1] - self.Y_step, self.Z]
+
+        return wc_out
+
+    # Need to add detect circle in move.py
+    def isReturnToHome(self, marker, dice_num, circle):
+            if circle == 1:
+                for i in list(self.marker_start.keys()):
+                    if i in marker:
+                        if self.nearlyEqual(self.markers[marker], self.marker_start[i]) is True:
+                            if dice_num <= 4:
+                                new_pos = self.markers_home[marker][dice_num-1]
+                                return new_pos
 
 # Detect 6 on dice for input in game new marker
 def isSix(dices):

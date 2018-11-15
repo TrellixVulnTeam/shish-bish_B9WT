@@ -66,7 +66,7 @@ def chooseMarker():
     new_pos = pl.Move(player_markers, all_markers).moveMarker(object.name, order_move['value_big'])
     #print(new_pos[object.name])
     
-    object.position = new_pos[object.name]
+    object.position = new_pos[0][object.name]
     #print("Mouse: ", controller.sensors["Mouse"].level)
     
     #print("Mouse.001: ", controller.sensors["Mouse.001"].level)
