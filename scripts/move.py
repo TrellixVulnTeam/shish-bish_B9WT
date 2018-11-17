@@ -58,14 +58,21 @@ def chooseMarker():
     all_markers = {}
     
     markers = logic.getCurrentScene().objects
+    markers[2].position = [0.01, 3.66, 0.37]
     for i in markers:
         if 'Green' in i.name:
             player_markers[i.name] = [round(i.position[0], 2), round(i.position[1], 2), round(i.position[2], 2)]
         all_markers[i.name] = [round(i.position[0], 2), round(i.position[1], 2), round(i.position[2], 2)]
-            
+        #print(i.name, i.position)
+       
     new_pos = pl.Move(player_markers, all_markers).moveMarker(object.name, order_move['value_big'])
     #print(new_pos[object.name])
     
+    for i in range(len(markers)):
+        if 'Green' not in markers[i].name:
+            if new_pos[1][markers[i].name] != markers[i].position:
+                markers[i].position = new_pos[1][markers[i].name]
+                        
     object.position = new_pos[0][object.name]
     #print("Mouse: ", controller.sensors["Mouse"].level)
     
