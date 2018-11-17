@@ -123,12 +123,13 @@ class Move:
         self.getWCMarker()
         new_pos = self.moveAcrossWC(marker, dice_num, new_pos)
         new_pos = self.isPosOnStairs(new_pos)
+        self.isBitEnemyMarker(new_pos, marker)
         if self.isWayFree(new_pos, dice_num, marker) is not False:
             self.markers[marker] = [new_pos[0], new_pos[1], self.Z]
         else:
             print('can not move there')
 
-        self.isBitEnemyMarker(marker)
+        #self.isBitEnemyMarker(marker)
 
     # Choose way to change position of marker
     def detectBorder(self, Xcoord, Ycoord, dice_num):
@@ -345,14 +346,45 @@ class Move:
             if marker in self.marker_in_wc[i]:
                 return True
 
-    def isBitEnemyMarker(self, marker):
+    '''def isBitEnemyMarker(self, marker):
         for i in list(self.all_markers.keys()):
             if i not in list(self.markers.keys()):
                 if self.nearlyEqual(self.all_markers[i][0], self.markers[marker][0]) is True and \
                         self.nearlyEqual(self.all_markers[i][1], self.markers[marker][1]) is True:
                     keys = i.split('_')
                     self.all_markers[i] = self.marker_before_game[keys[0]][int(keys[-1])-1]
+                    return True'''
+
+    def isBitEnemyMarker(self, new_pos, marker):
+        for i in list(self.all_markers.keys()):
+            if i not in list(self.markers.keys()):
+                if self.nearlyEqual(self.all_markers[i][0], new_pos[0]) is True and \
+                        self.nearlyEqual(self.all_markers[i][1], new_pos[1]) is True:
+                    for j in list(self.wc_coord.keys()):
+                        for k in list(self.wc_coord[j].keys()):
+                            if self.nearlyEqual(self.wc_coord[j][k][0], self.all_markers[i][0]) is True and \
+                                    self.nearlyEqual(self.wc_coord[j][k][1], self.all_markers[i][1]) is True:
+                                self.marker_in_wc[j].append(i)
+                                dice_num = j
+                                break
+                    result = self.moveAcrossWC(i, dice_num, self.all_markers[i])
+                    if result is None:
+                        keys = i.split('_')
+                        self.all_markers[i] = self.marker_before_game[keys[0]][int(keys[-1])-1]
+                    else:
+                        self.all_markers[i] = [result[0], result[1], self.Z]
                     return True
+
+    # Need to detect is way across WC is free, if not need to push marker that stay before
+    def isWCBusy(self, new_pos):
+        for i in range(len(list(self.wc_coord.keys()))):
+            for j in list(self.wc_coord[self.wc_coord[i]].keys()):
+                if self.nearlyEqual(new_pos[0], self.wc_coord[self.wc_coord[i]][j][0]) is True and \
+                        self.nearlyEqual(new_pos[1], self.wc_coord[self.wc_coord[i]][j][1]) is True:
+                    for k in list(self.all_markers.keys()):
+                        if self.nearlyEqual(self.all_markers[k][0], self.wc_coord[self.wc_coord[i+1]][j]) is True and \
+                                self.nearlyEqual(self.all_markers[k][1], self.wc_coord[self.wc_coord[i+1]][j]) is True:
+                            pass
 
     def isPosChange(self, new_pos, marker):
         pass
@@ -432,8 +464,8 @@ class Move:
     def moveAcrossWC(self, marker, dice_num, new_pos):
         if dice_num in list(self.marker_in_wc.keys()):
             for i in list(self.wc_coord[dice_num].keys()):
-                if self.nearlyEqual(self.markers[marker][0], self.wc_coord[dice_num][i][0]) is True and \
-                        self.nearlyEqual(self.markers[marker][1], self.wc_coord[dice_num][i][1]) is True:
+                if self.nearlyEqual(self.all_markers[marker][0], self.wc_coord[dice_num][i][0]) is True and \
+                        self.nearlyEqual(self.all_markers[marker][1], self.wc_coord[dice_num][i][1]) is True:
                     if dice_num == 1:
                         new_pos = [self.wc_coord[3][i][0], self.wc_coord[3][i][1]]
                         break
@@ -443,6 +475,7 @@ class Move:
                     elif dice_num == 6:
                         wc_out = self.setWCOut()
                         new_pos = [wc_out[i][0], wc_out[i][1]]
+                        break
 
         return new_pos
 
