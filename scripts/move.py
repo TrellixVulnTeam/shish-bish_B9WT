@@ -8,6 +8,8 @@ sys.path.insert(0, '/home/data/documents/python/shish-bish/scripts')
 import player_logic as pl
 
 dices = {'Dice_1': 0, 'Dice_2': 0}
+movement = 1
+circle = 0
 
 def getOwner():
     controller = logic.getCurrentController()
@@ -43,17 +45,13 @@ def goDice():
         #chooseMarker()
         
 def chooseMarker():
-    #print(logic.getCurrentScene().objects)
-    #marker = types.KX_GameObject(logic.getCurrentScene().objects[6])
-    #print(marker.position)
-    #pass
-    
+    global circle, movement
+
     object = getOwner()
-    #print(object.name)
-    #print(object.position)
     
     order_move = pl.chooseDiceNum(dices)
-    #print(order_move)
+    if 0 not in order_move.values():
+        movement = order_move['movement']
     player_markers = {}
     all_markers = {}
     
@@ -65,23 +63,17 @@ def chooseMarker():
             player_markers[i.name] = [round(i.position[0], 2), round(i.position[1], 2), round(i.position[2], 2)]
         #if 'marker' in i.name:
         all_markers[i.name] = [round(i.position[0], 2), round(i.position[1], 2), round(i.position[2], 2)]
-        #print(i.name, i.position)
-    #print(markers[2].position)   
-    new_pos = pl.Move(player_markers, all_markers).moveMarker(object.name, order_move['value_big'])
-    #print(new_pos[object.name])
+    
+    new_pos = pl.Move(player_markers, all_markers, circle).moveMarker(object.name, order_move['value_big'])
     
     for i in range(len(markers)):
         if 'Green' not in markers[i].name and 'marker' in markers[i].name:
             if new_pos[1][markers[i].name] != markers[i].position:
                 markers[i].position = new_pos[1][markers[i].name]
-                        
+                            
     object.position = new_pos[0][object.name]
-    #print("Mouse: ", controller.sensors["Mouse"].level)
+    circle = new_pos[2]
     
-    #print("Mouse.001: ", controller.sensors["Mouse.001"].level)
-    
-    #mouse_pos = logic.mouse.position
-    
-    #object.position = [mouse_pos[0], mouse_pos[1], 0.2006]
-    #if controller.sensors["Mouse"].status == 1:
-        #object.position = [4.0, 0.0, 0.2006]
+    for i in list(dices.keys()):
+        if order_move['value_big'] == dices[i]:
+            dices[i] = 0

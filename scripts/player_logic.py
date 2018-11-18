@@ -4,9 +4,10 @@ import math
 import re
 
 class Move:
-    def __init__(self, markers, all_markers):
+    def __init__(self, markers, all_markers, circle):
         self.markers = markers
         self.all_markers = all_markers
+        self.circle = circle
         #Left bottom: <Vector (-3.6412, 3.6616, 0.3728)>
         #Right bottom: <Vector (-3.6503, -3.6722, 0.3728)>
         #Right top: <Vector (3.6801, -3.6722, 0.3728)>
@@ -97,15 +98,15 @@ class Move:
         in_game = self.isMarkerInGame(marker)
         if in_game is True:
             self.setMarkerPos(marker, dice_num)
-            circle = 1
+            self.circle = 1
         else:
             if dice_num == 6:
                 marker_color = re.split(r'_', marker)
                 self.markers[marker] = self.marker_start[marker_color[0]]
-                circle = 0
+                self.circle = 0
 
         # self.setMarkerPos(marker, dice_num)
-        return (self.markers, self.all_markers, circle)
+        return (self.markers, self.all_markers, self.circle)
     
     # Set new marker position. Need set move via stairs and wc input!!!
     def setMarkerPos(self, marker, dice_num):
@@ -116,7 +117,7 @@ class Move:
                 break
 
         if len(new_pos) == 0:
-            new_pos = self.detectBorder(self.markers[marker][0], self.markers[marker][1], dice_num)
+            new_pos = self.detectBorder(self.markers[marker][0], self.markers[marker][1], dice_num, marker)
 
         new_pos = self.setRound(new_pos)
         new_pos = self.isPosInputWC(new_pos)
@@ -124,6 +125,7 @@ class Move:
         new_pos = self.moveAcrossWC(marker, dice_num, new_pos)
         new_pos = self.isPosOnStairs(new_pos)
         self.isBitEnemyMarker(new_pos, marker)
+        new_pos = self.setHomePos(new_pos, marker, dice_num)
         if self.isWayFree(new_pos, dice_num, marker) is not False:
             self.markers[marker] = [new_pos[0], new_pos[1], self.Z]
         else:
@@ -132,10 +134,10 @@ class Move:
         #self.isBitEnemyMarker(marker)
 
     # Choose way to change position of marker
-    def detectBorder(self, Xcoord, Ycoord, dice_num):
+    def detectBorder(self, Xcoord, Ycoord, dice_num, marker):
         new_pos = [Xcoord, Ycoord]
         #operator = self.getOperator(Xcoord, Ycoord)
-        
+
         if Xcoord == self.bot_X_border:
             if Ycoord + dice_num * self.Y_step > self.left_Y_border:
                 excess = math.fabs((Ycoord + dice_num * self.Y_step) - self.left_Y_border)
@@ -170,21 +172,46 @@ class Move:
 
         return new_pos
 
-    # It will replace detectBorder
-    def detectBorderNew(self, Xcoord, Ycoord, dice_num):
-        new_pos = [Xcoord, Ycoord]
+    def isMarkerComeHome(self, marker, points, marker_color):
+        for i in range(len(points[0])):
+            if self.nearlyEqual(points[0][i], self.marker_start[marker_color][0]) is True and \
+                    self.nearlyEqual(points[1][i], self.marker_start[marker_color][1]) is True:
+                if self.circle == 1:
+                    num = i
+                    return num
 
-        if Xcoord in [self.bot_X_border, self.top_X_border]:
-            operator = self.getOperator(Xcoord, Ycoord)
-            new_coord = self.countNewPos(Xcoord, dice_num, self.X_step, round(Xcoord, 2), operator[0])
-            new_pos = [new_coord[0], Ycoord + operator[1] * self.Y_step]
-
-        elif Ycoord in [self.left_Y_border, self.right_Y_border]:
-            operator = self.getOperator(Xcoord, Ycoord)
-            new_coord = self.countNewPos(Ycoord, dice_num, self.Y_step, round(Ycoord, 2), operator[1])
-            new_pos = [Xcoord + operator[0] * self.X_step, new_coord[0]]
+    def setHomePos(self, new_pos, marker, dice_num):
+        points = self.createArrayOfPoints(new_pos, dice_num, marker)
+        # print(points)
+        marker_color = marker.split('_')[0]
+        num = self.isMarkerComeHome(marker, points, marker_color)
+        print(num)
+        if num is not None:
+            dice_num = dice_num - (num + 1)
+            if dice_num <= 4:
+                new_pos[0] = self.markers_home[marker_color][dice_num-1][0]
+                new_pos[1] = self.markers_home[marker_color][dice_num-1][1]
+            else:
+                new_pos[0] = self.markers[marker][0]
+                new_pos[1] = self.markers[marker][1]
 
         return new_pos
+
+    # It will replace detectBorder
+    # def detectBorderNew(self, Xcoord, Ycoord, dice_num):
+    #     new_pos = [Xcoord, Ycoord]
+    #
+    #     if Xcoord in [self.bot_X_border, self.top_X_border]:
+    #         operator = self.getOperator(Xcoord, Ycoord)
+    #         new_coord = self.countNewPos(Xcoord, dice_num, self.X_step, round(Xcoord, 2), operator[0])
+    #         new_pos = [new_coord[0], Ycoord + operator[1] * self.Y_step]
+    #
+    #     elif Ycoord in [self.left_Y_border, self.right_Y_border]:
+    #         operator = self.getOperator(Xcoord, Ycoord)
+    #         new_coord = self.countNewPos(Ycoord, dice_num, self.Y_step, round(Ycoord, 2), operator[1])
+    #         new_pos = [Xcoord + operator[0] * self.X_step, new_coord[0]]
+    #
+    #     return new_pos
 
     # Count excess to dice num
     def excessToDice(self, excess, step):
@@ -495,22 +522,6 @@ class Move:
                 wc_out[i] = [self.wc_coord[6][i][0], self.wc_coord[6][i][1] - self.Y_step, self.Z]
 
         return wc_out
-
-    # Need to add detect circle in move.py
-    def isReturnToHome(self, marker, dice_num, circle):
-            if circle == 1:
-                for i in list(self.marker_start.keys()):
-                    if i in marker:
-                        if self.nearlyEqual(self.markers[marker], self.marker_start[i]) is True:
-                            if dice_num <= 4:
-                                new_pos = self.markers_home[marker][dice_num-1]
-                                return new_pos
-
-# Detect 6 on dice for input in game new marker
-def isSix(dices):
-    for i in list(dices.values()):
-        if i == 6:
-            return True
 
 # Choose more number on dices
 def chooseDiceNum(dices):
