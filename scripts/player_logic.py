@@ -126,6 +126,7 @@ class Move:
         new_pos = self.isPosOnStairs(new_pos)
         self.isBitEnemyMarker(new_pos, marker)
         new_pos = self.setHomePos(new_pos, marker, dice_num)
+        new_pos = self.moveAccrossHome(marker, dice_num, new_pos)
         if self.isWayFree(new_pos, dice_num, marker) is not False:
             self.markers[marker] = [new_pos[0], new_pos[1], self.Z]
         else:
@@ -173,6 +174,8 @@ class Move:
         return new_pos
 
     def isMarkerComeHome(self, marker, points, marker_color):
+        points[0].insert(0, self.markers[marker][0])
+        points[1].insert(0, self.markers[marker][1])
         for i in range(len(points[0])):
             if self.nearlyEqual(points[0][i], self.marker_start[marker_color][0]) is True and \
                     self.nearlyEqual(points[1][i], self.marker_start[marker_color][1]) is True:
@@ -181,19 +184,48 @@ class Move:
                     return num
 
     def setHomePos(self, new_pos, marker, dice_num):
-        points = self.createArrayOfPoints(new_pos, dice_num, marker)
+        points = self.createArrayOfPoints([self.markers[marker][0], self.markers[marker][1]], dice_num, marker)
         # print(points)
         marker_color = marker.split('_')[0]
         num = self.isMarkerComeHome(marker, points, marker_color)
-        print(num)
+        # print('num: ', num)
+        # print('dice: ', dice_num)
         if num is not None:
-            dice_num = dice_num - (num + 1)
-            if dice_num <= 4:
+            dice_num = dice_num - num
+            if 0 < dice_num <= 4:
+                # print('1: ', dice_num)
                 new_pos[0] = self.markers_home[marker_color][dice_num-1][0]
                 new_pos[1] = self.markers_home[marker_color][dice_num-1][1]
-            else:
-                new_pos[0] = self.markers[marker][0]
-                new_pos[1] = self.markers[marker][1]
+            elif dice_num == 0:
+                # print('2: ', dice_num)
+                new_pos[0] = self.marker_start[marker_color][0]
+                new_pos[1] = self.marker_start[marker_color][1]
+            elif dice_num < 0:
+                # print('3: ', dice_num)
+                new_pos[0] = self.markers_home[marker_color][(0-dice_num)-1][0]
+                new_pos[1] = self.markers_home[marker_color][(0-dice_num)-1][1]
+            # else:
+                # print('4: ', dice_num)
+                # new_pos[0] = self.markers[marker][0]
+                # new_pos[1] = self.markers[marker][1]
+
+        return new_pos
+
+    def isMarkerAtHome(self, marker, marker_color):
+        for i in range(len(self.markers_home[marker_color])):
+            if self.nearlyEqual(self.markers[marker][0], self.markers_home[marker_color][i][0]) is True and \
+                    self.nearlyEqual(self.markers[marker][1], self.markers_home[marker_color][i][1]) is True:
+                pos = i
+                return pos
+
+    def moveAccrossHome(self, marker, dice_num, new_pos):
+        marker_color = marker.split('_')[0]
+        pos = self.isMarkerAtHome(marker, marker_color)
+        print('pos: ', pos)
+        if pos is not None:
+            if dice_num <= 4 - (pos + 1):
+                new_pos[0] = self.markers_home[marker_color][pos+dice_num][0]
+                new_pos[1] = self.markers_home[marker_color][pos+dice_num][1]
 
         return new_pos
 
@@ -487,6 +519,11 @@ class Move:
                         self.nearlyEqual(self.markers[marker][1], self.wc_coord[i][j][1]) is True:
                     # print(marker)
                     return True
+        marker_color = marker.split('_')[0]
+        for i in self.markers_home[marker_color]:
+            if self.nearlyEqual(self.markers[marker][0], i[0]) is True and \
+                    self.nearlyEqual(self.markers[marker][1], i[1]) is True:
+                return True
 
     def moveAcrossWC(self, marker, dice_num, new_pos):
         if dice_num in list(self.marker_in_wc.keys()):

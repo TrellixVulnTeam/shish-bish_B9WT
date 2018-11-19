@@ -77,3 +77,4 @@ def chooseMarker():
     for i in list(dices.keys()):
         if order_move['value_big'] == dices[i]:
             dices[i] = 0
+            break
