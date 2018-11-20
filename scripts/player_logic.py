@@ -101,9 +101,10 @@ class Move:
             self.circle = 1
         else:
             if dice_num == 6:
-                marker_color = re.split(r'_', marker)
-                self.markers[marker] = self.marker_start[marker_color[0]]
-                self.circle = 0
+                marker_color = re.split(r'_', marker)[0]
+                if self.isMarkerAtHome(marker, marker_color) is None:
+                    self.markers[marker] = self.marker_start[marker_color]
+                    self.circle = 0
 
         # self.setMarkerPos(marker, dice_num)
         return (self.markers, self.all_markers, self.circle)
