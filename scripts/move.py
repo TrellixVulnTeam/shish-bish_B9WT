@@ -4,8 +4,8 @@ import math
 import sys
 import os
 
-scripts_path = os.path.join(os.path.split(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])[0], 'scripts')
-
+scripts_path = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], 'scripts')
+print(scripts_path)
 #sys.path.insert(0, '/home/data/documents/python/shish-bish/scripts')
 sys.path.insert(0, scripts_path)
 import player_logic as pl
