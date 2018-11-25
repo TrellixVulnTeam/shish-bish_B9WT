@@ -3,6 +3,39 @@
 import math
 import re
 
+# Choose more number on dices
+def chooseDiceNum(dices):
+    value_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
+    if dices['Dice_1'] > dices['Dice_2']:
+        value_move['value_big'] = dices['Dice_1']
+        value_move['value_small'] = dices['Dice_2']
+    elif dices['Dice_2'] > dices['Dice_1']:
+        value_move['value_big'] = dices['Dice_2']
+        # value_move['value_big'] = dices['Dice_1']
+        value_move['value_small'] = dices['Dice_1']
+        value_move['movement'] = 2
+
+    return value_move
+
+def nearlyEqual(x, y):
+    z = [1, -1]
+    x = round(x, 1)
+    y = round(y, 1)
+    for i in z:
+        delta_y = round(y + i * 0.1, 1)
+        for j in z:
+            delta_x = round(x + j * 0.1, 1)
+            if delta_x == delta_y or x == delta_y or delta_x == y or x == y:
+                return True
+
+# Detect is other palyer markers can move
+def getMarkersMove(player_markers, all_markers, circle, marker, dice_num, marker_pos):
+    new_pos = Move(player_markers, all_markers, circle).moveMarker(marker, dice_num)
+    if nearlyEqual(new_pos[0][marker][0], marker_pos[0]) is True and nearlyEqual(new_pos[0][marker][1], marker_pos[1]) is True:
+        return False
+    else:
+        return True
+
 class Move:
     def __init__(self, markers, all_markers, circle):
         self.markers = markers
@@ -178,8 +211,8 @@ class Move:
         points[0].insert(0, self.markers[marker][0])
         points[1].insert(0, self.markers[marker][1])
         for i in range(len(points[0])):
-            if self.nearlyEqual(points[0][i], self.marker_start[marker_color][0]) is True and \
-                    self.nearlyEqual(points[1][i], self.marker_start[marker_color][1]) is True:
+            if nearlyEqual(points[0][i], self.marker_start[marker_color][0]) is True and \
+                    nearlyEqual(points[1][i], self.marker_start[marker_color][1]) is True:
                 if self.circle == 1:
                     num = i
                     return num
@@ -214,37 +247,21 @@ class Move:
 
     def isMarkerAtHome(self, marker, marker_color):
         for i in range(len(self.markers_home[marker_color])):
-            if self.nearlyEqual(self.markers[marker][0], self.markers_home[marker_color][i][0]) is True and \
-                    self.nearlyEqual(self.markers[marker][1], self.markers_home[marker_color][i][1]) is True:
+            if nearlyEqual(self.markers[marker][0], self.markers_home[marker_color][i][0]) is True and \
+                    nearlyEqual(self.markers[marker][1], self.markers_home[marker_color][i][1]) is True:
                 pos = i
                 return pos
 
     def moveAccrossHome(self, marker, dice_num, new_pos):
         marker_color = marker.split('_')[0]
         pos = self.isMarkerAtHome(marker, marker_color)
-        print('pos: ', pos)
+        # print('pos: ', pos)
         if pos is not None:
             if dice_num <= 4 - (pos + 1):
                 new_pos[0] = self.markers_home[marker_color][pos+dice_num][0]
                 new_pos[1] = self.markers_home[marker_color][pos+dice_num][1]
 
         return new_pos
-
-    # It will replace detectBorder
-    # def detectBorderNew(self, Xcoord, Ycoord, dice_num):
-    #     new_pos = [Xcoord, Ycoord]
-    #
-    #     if Xcoord in [self.bot_X_border, self.top_X_border]:
-    #         operator = self.getOperator(Xcoord, Ycoord)
-    #         new_coord = self.countNewPos(Xcoord, dice_num, self.X_step, round(Xcoord, 2), operator[0])
-    #         new_pos = [new_coord[0], Ycoord + operator[1] * self.Y_step]
-    #
-    #     elif Ycoord in [self.left_Y_border, self.right_Y_border]:
-    #         operator = self.getOperator(Xcoord, Ycoord)
-    #         new_coord = self.countNewPos(Ycoord, dice_num, self.Y_step, round(Ycoord, 2), operator[1])
-    #         new_pos = [Xcoord + operator[0] * self.X_step, new_coord[0]]
-    #
-    #     return new_pos
 
     # Count excess to dice num
     def excessToDice(self, excess, step):
@@ -312,94 +329,107 @@ class Move:
     # Get markers that in WC
     def getWCMarker(self):
         for i in list(self.markers.keys()):
-            if self.nearlyEqual(self.markers[i][1], self.wc_coord[1]['bot'][1]) is True or \
-                    self.nearlyEqual(self.markers[i][1], self.wc_coord[1]['top'][1]) is True or \
-                    self.nearlyEqual(self.markers[i][0], self.wc_coord[1]['left'][0]) is True or \
-                    self.nearlyEqual(self.markers[i][0], self.wc_coord[1]['right'][0]) is True:
+            if nearlyEqual(self.markers[i][0], self.wc_coord[1]['bot'][0]) is True or \
+                    nearlyEqual(self.markers[i][0], self.wc_coord[1]['top'][0]) is True or \
+                    nearlyEqual(self.markers[i][1], self.wc_coord[1]['left'][1]) is True or \
+                    nearlyEqual(self.markers[i][1], self.wc_coord[1]['right'][1]) is True:
                 self.marker_in_wc[1].append(i)
-
-            elif self.nearlyEqual(self.markers[i][1], self.wc_coord[3]['bot'][1]) is True or \
-                    self.nearlyEqual(self.markers[i][1], self.wc_coord[3]['top'][1]) is True or \
-                    self.nearlyEqual(self.markers[i][0], self.wc_coord[3]['left'][0]) is True or \
-                    self.nearlyEqual(self.markers[i][0], self.wc_coord[3]['right'][0]) is True:
+                # print('1: ', self.marker_in_wc)
+            elif nearlyEqual(self.markers[i][0], self.wc_coord[3]['bot'][0]) is True or \
+                    nearlyEqual(self.markers[i][0], self.wc_coord[3]['top'][0]) is True or \
+                    nearlyEqual(self.markers[i][1], self.wc_coord[3]['left'][1]) is True or \
+                    nearlyEqual(self.markers[i][1], self.wc_coord[3]['right'][1]) is True:
                 self.marker_in_wc[3].append(i)
-
-            elif self.nearlyEqual(self.markers[i][1], self.wc_coord[6]['bot'][1]) is True or \
-                    self.nearlyEqual(self.markers[i][1], self.wc_coord[6]['top'][1]) is True or \
-                    self.nearlyEqual(self.markers[i][0], self.wc_coord[6]['left'][0]) is True or \
-                    self.nearlyEqual(self.markers[i][0], self.wc_coord[6]['right'][0]) is True:
+                # print('2: ', self.marker_in_wc)
+            elif nearlyEqual(self.markers[i][0], self.wc_coord[6]['bot'][0]) is True or \
+                    nearlyEqual(self.markers[i][0], self.wc_coord[6]['top'][0]) is True or \
+                    nearlyEqual(self.markers[i][1], self.wc_coord[6]['left'][1]) is True or \
+                    nearlyEqual(self.markers[i][1], self.wc_coord[6]['right'][1]) is True:
                 self.marker_in_wc[6].append(i)
-
-        # for i in list(self.markers.keys()):
-        #     if self.marker[i] in self.wc_coord[1]['bot'] or self.marker[i] in self.wc_coord[1]['left'] or \
-        #             self.marker[i] in self.wc_coord[1]['top'] or self.marker[i] in self.wc_coord[1]['right']:
-        #         self.marker_in_wc[1].append(i)
-        #     elif self.marker[i] in self.wc_coord[3]['bot'] or self.marker[i] in self.wc_coord[3]['left'] or \
-        #             self.marker[i] in self.wc_coord[3]['top'] or self.marker[i] in self.wc_coord[3]['right']:
-        #         self.marker_in_wc[3].append(i)
-        #     elif self.marker[i] in self.wc_coord[6]['bot'] or self.marker[i] in self.wc_coord[6]['left'] or \
-        #             self.marker[i] in self.wc_coord[6]['top'] or self.marker[i] in self.wc_coord[6]['right']:
-        #         self.marker_in_wc[6].append(i)
+                # print('3: ', self.marker_in_wc)
 
     # Detect way for free
     def isWayFree(self, new_pos, dice_num, marker):
         points = self.chooseWay(new_pos, dice_num, marker)
-
+        # print(points)
         for i in self.corners:
-            if self.nearlyEqual(i[0], new_pos[0]) is True and self.nearlyEqual(i[1], new_pos[1]) is True:
+            if nearlyEqual(i[0], new_pos[0]) is True and nearlyEqual(i[1], new_pos[1]) is True:
                 points[0].append(i[0])
                 points[1].append(i[1])
 
         for i in list(self.all_markers.keys()):
             for j in range(len(points[0])):
-                if self.nearlyEqual(self.all_markers[i][0], points[0][j]) is True and \
-                        self.nearlyEqual(self.all_markers[i][1], points[1][j]):
+                if nearlyEqual(self.all_markers[i][0], points[0][j]) is True and \
+                        nearlyEqual(self.all_markers[i][1], points[1][j]):
                     return False
 
         for i in list(self.markers.keys()):
-            if self.nearlyEqual(self.markers[i][0], new_pos[0]) is True and \
-                    self.nearlyEqual(self.markers[i][1], new_pos[1]) is True:
+            if nearlyEqual(self.markers[i][0], new_pos[0]) is True and \
+                    nearlyEqual(self.markers[i][1], new_pos[1]) is True:
                 return False
 
     def chooseWay(self, new_pos, dice_num, marker):
         if self.chooseLogicForArray(marker) is True:
             points = self.moveAcrossWC(marker, dice_num, new_pos)
             points = [[points[0]], [points[1]]]
-            return points
         else:
             points = self.createArrayOfPoints(new_pos, dice_num, marker)
-            return points
+
+        return points
 
     # Create array of points that between old and new position
     def createArrayOfPoints(self, new_pos, dice_num, marker):
         operator = self.getOperator(self.markers[marker][0], self.markers[marker][1])
         points = [[], []]
-        if self.nearlyEqual(new_pos[0], self.markers[marker][0]) is True:
+        if nearlyEqual(new_pos[0], self.markers[marker][0]) is True:
             for i in range(1, dice_num+1):
-                points[1].append(self.markers[marker][1] + operator[1] * i * self.Y_step)
                 points[0].append(self.markers[marker][0])
-        elif self.nearlyEqual(new_pos[1], self.markers[marker][1]) is True:
-            for i in range(1, dice_num):
-                points[0].append(self.markers[marker][0] + operator[0] * i * self.X_step)
-                points[1].append(self.markers[marker][1])
-        else:
+                points[1].append(self.markers[marker][1] + operator[1] * i * self.Y_step)
+
+        elif nearlyEqual(new_pos[1], self.markers[marker][1]) is True:
             for i in range(1, dice_num+1):
-                if self.top_X_border < self.markers[marker][0] + operator[0] * i * self.X_step < self.bot_X_border:
-                    if len(points[1]) == 0:
-                        points[1].append(self.markers[marker][1] + operator[1] * self.Y_step)
-                        points[0].append(self.markers[marker][0])
+                points[1].append(self.markers[marker][1])
+                points[0].append(self.markers[marker][0] + operator[0] * i * self.X_step)
+
+        else:
+            # print('else')
+            if nearlyEqual(self.markers[marker][0], self.top_X_border) is True or \
+                    nearlyEqual(self.markers[marker][0], self.bot_X_border) is True:
+                points[1].append(self.markers[marker][1] + operator[1] * self.Y_step)
+                points[0].append(self.markers[marker][0])
+                j = 0
+                for i in range(2, dice_num+1):
+                    # print(i, points)
+                    if nearlyEqual(points[1][-1], self.left_Y_border) is True or nearlyEqual(points[1][-1], self.right_Y_border) is True:
+                        points[1].append(points[1][-1])
+                        points[0].append(self.markers[marker][0] + operator[0] * i * self.X_step)
                     else:
-                        points[1].append(points[1][-1] + operator[1] * self.Y_step)
+                        j = j + 1
+                        points[1].append(self.markers[marker][1] + operator[1] * j * self.Y_step)
                         points[0].append(self.markers[marker][0])
-                elif self.right_Y_border < self.markers[marker][1] + operator[1] * i * self.Y_step < self.left_Y_border:
-                    if len(points[0]) == 0:
-                        points[0].append(self.markers[marker][0] + operator[0] * self.X_step)
-                        points[1].append(self.markers[marker][1])
+
+            elif nearlyEqual(self.markers[marker][1], self.right_Y_border) is True or \
+                    nearlyEqual(self.markers[marker][1], self.left_Y_border) is True:
+                points[0].append(self.markers[marker][0] + operator[0] * self.X_step)
+                points[1].append(self.markers[marker][1])
+                j = 0
+                for i in range(2, dice_num+1):
+                    if nearlyEqual(points[0][-1], self.bot_X_border) is True or nearlyEqual(points[0][-1], self.top_X_border) is True:
+                        points[0].append(points[0][-1])
+                        points[1].append(self.markers[marker][1] + operator[1] * i * self.Y_step)
                     else:
-                        points[0].append(points[0][-1] + operator[0] * self.X_step)
+                        j = j + 1
+                        points[0].append(self.markers[marker][0] + operator[0] * j * self.X_step)
                         points[1].append(self.markers[marker][1])
 
         return points
+
+    def createArrayOfPointsNew(self, new_pos, dice_num, marker):
+        operator = self.getOperator(self.markers[marker][0], self.markers[marker][1])
+        points = [[], []]
+        step = 1
+        while step < dice_num + 1:
+            pass
 
     def chooseLogicForArray(self, marker):
         for i in list(self.marker_in_wc.keys()):
@@ -409,8 +439,8 @@ class Move:
     '''def isBitEnemyMarker(self, marker):
         for i in list(self.all_markers.keys()):
             if i not in list(self.markers.keys()):
-                if self.nearlyEqual(self.all_markers[i][0], self.markers[marker][0]) is True and \
-                        self.nearlyEqual(self.all_markers[i][1], self.markers[marker][1]) is True:
+                if nearlyEqual(self.all_markers[i][0], self.markers[marker][0]) is True and \
+                        nearlyEqual(self.all_markers[i][1], self.markers[marker][1]) is True:
                     keys = i.split('_')
                     self.all_markers[i] = self.marker_before_game[keys[0]][int(keys[-1])-1]
                     return True'''
@@ -418,12 +448,12 @@ class Move:
     def isBitEnemyMarker(self, new_pos, marker):
         for i in list(self.all_markers.keys()):
             if i not in list(self.markers.keys()):
-                if self.nearlyEqual(self.all_markers[i][0], new_pos[0]) is True and \
-                        self.nearlyEqual(self.all_markers[i][1], new_pos[1]) is True:
+                if nearlyEqual(self.all_markers[i][0], new_pos[0]) is True and \
+                        nearlyEqual(self.all_markers[i][1], new_pos[1]) is True:
                     for j in list(self.wc_coord.keys()):
                         for k in list(self.wc_coord[j].keys()):
-                            if self.nearlyEqual(self.wc_coord[j][k][0], self.all_markers[i][0]) is True and \
-                                    self.nearlyEqual(self.wc_coord[j][k][1], self.all_markers[i][1]) is True:
+                            if nearlyEqual(self.wc_coord[j][k][0], self.all_markers[i][0]) is True and \
+                                    nearlyEqual(self.wc_coord[j][k][1], self.all_markers[i][1]) is True:
                                 self.marker_in_wc[j].append(i)
                                 dice_num = j
                                 break
@@ -439,11 +469,11 @@ class Move:
     def isWCBusy(self, new_pos):
         for i in range(len(list(self.wc_coord.keys()))):
             for j in list(self.wc_coord[self.wc_coord[i]].keys()):
-                if self.nearlyEqual(new_pos[0], self.wc_coord[self.wc_coord[i]][j][0]) is True and \
-                        self.nearlyEqual(new_pos[1], self.wc_coord[self.wc_coord[i]][j][1]) is True:
+                if nearlyEqual(new_pos[0], self.wc_coord[self.wc_coord[i]][j][0]) is True and \
+                        nearlyEqual(new_pos[1], self.wc_coord[self.wc_coord[i]][j][1]) is True:
                     for k in list(self.all_markers.keys()):
-                        if self.nearlyEqual(self.all_markers[k][0], self.wc_coord[self.wc_coord[i+1]][j]) is True and \
-                                self.nearlyEqual(self.all_markers[k][1], self.wc_coord[self.wc_coord[i+1]][j]) is True:
+                        if nearlyEqual(self.all_markers[k][0], self.wc_coord[self.wc_coord[i+1]][j]) is True and \
+                                nearlyEqual(self.all_markers[k][1], self.wc_coord[self.wc_coord[i+1]][j]) is True:
                             pass
 
     def isPosChange(self, new_pos, marker):
@@ -460,7 +490,7 @@ class Move:
         #         elif i == 'left' or i == 'right':
         #             `[1] = new_pos[1] + operator[1] * self.Y_step
         for i in list(self.wc_input.keys()):
-            if self.nearlyEqual(new_pos[0], self.wc_input[i][0]) is True and self.nearlyEqual(new_pos[1], self.wc_input[i][1]) is True:
+            if nearlyEqual(new_pos[0], self.wc_input[i][0]) is True and nearlyEqual(new_pos[1], self.wc_input[i][1]) is True:
                 if i == 'bot' or i == 'top':
                     new_pos[0] = new_pos[0] + operator[0] * self.X_step
                 elif i == 'left' or i == 'right':
@@ -476,7 +506,7 @@ class Move:
         #         elif 'down' in i:
         #             new_pos = self.posOnDownStairs(i)
         for i in list(self.stairs.keys()):
-            if self.nearlyEqual(new_pos[0], self.stairs[i][0]) is True and self.nearlyEqual(new_pos[1], self.stairs[i][1]) is True:
+            if nearlyEqual(new_pos[0], self.stairs[i][0]) is True and nearlyEqual(new_pos[1], self.stairs[i][1]) is True:
                 if 'up' in i:
                     new_pos = self.posOnUpStairs(i)
                     break
@@ -485,17 +515,6 @@ class Move:
                     break
 
         return new_pos
-
-    def nearlyEqual(self, x, y):
-        z = [1, -1]
-        x = round(x, 1)
-        y = round(y, 1)
-        for i in z:
-            delta_y = round(y + i * 0.1, 1)
-            for j in z:
-                delta_x = round(x + j * 0.1, 1)
-                if delta_x == delta_y or x == delta_y or delta_x == y or x == y:
-                    return True
 
     def posOnUpStairs(self, key):
         key_split = re.split(r'_', key)
@@ -516,21 +535,21 @@ class Move:
 
         for i in list(self.wc_coord.keys()):
             for j in list(self.wc_coord[i].keys()):
-                if self.nearlyEqual(self.markers[marker][0], self.wc_coord[i][j][0]) is True and \
-                        self.nearlyEqual(self.markers[marker][1], self.wc_coord[i][j][1]) is True:
+                if nearlyEqual(self.markers[marker][0], self.wc_coord[i][j][0]) is True and \
+                        nearlyEqual(self.markers[marker][1], self.wc_coord[i][j][1]) is True:
                     # print(marker)
                     return True
         marker_color = marker.split('_')[0]
         for i in self.markers_home[marker_color]:
-            if self.nearlyEqual(self.markers[marker][0], i[0]) is True and \
-                    self.nearlyEqual(self.markers[marker][1], i[1]) is True:
+            if nearlyEqual(self.markers[marker][0], i[0]) is True and \
+                    nearlyEqual(self.markers[marker][1], i[1]) is True:
                 return True
 
     def moveAcrossWC(self, marker, dice_num, new_pos):
         if dice_num in list(self.marker_in_wc.keys()):
             for i in list(self.wc_coord[dice_num].keys()):
-                if self.nearlyEqual(self.all_markers[marker][0], self.wc_coord[dice_num][i][0]) is True and \
-                        self.nearlyEqual(self.all_markers[marker][1], self.wc_coord[dice_num][i][1]) is True:
+                if nearlyEqual(self.all_markers[marker][0], self.wc_coord[dice_num][i][0]) is True and \
+                        nearlyEqual(self.all_markers[marker][1], self.wc_coord[dice_num][i][1]) is True:
                     if dice_num == 1:
                         new_pos = [self.wc_coord[3][i][0], self.wc_coord[3][i][1]]
                         break
@@ -560,19 +579,3 @@ class Move:
                 wc_out[i] = [self.wc_coord[6][i][0], self.wc_coord[6][i][1] - self.Y_step, self.Z]
 
         return wc_out
-
-# Choose more number on dices
-def chooseDiceNum(dices):
-    value_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
-    if dices['Dice_1'] > dices['Dice_2']:
-        value_move['value_big'] = dices['Dice_1']
-        value_move['value_small'] = dices['Dice_2']
-    elif dices['Dice_2'] > dices['Dice_1']:
-        value_move['value_big'] = dices['Dice_2']
-        value_move['value_small'] = dices['Dice_1']
-    elif dices['Dice_1'] == dices['Dice_2']:
-        value_move['value_big'] = dices['Dice_1']
-        value_move['value_small'] = dices['Dice_2']
-        value_move['movement'] = 2
-
-    return value_move
