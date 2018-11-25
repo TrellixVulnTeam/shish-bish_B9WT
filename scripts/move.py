@@ -4,7 +4,10 @@ import math
 import sys
 import os
 
-sys.path.insert(0, '/home/data/documents/python/shish-bish/scripts')
+scripts_path = os.path.join(os.path.split(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])[0], 'scripts')
+
+#sys.path.insert(0, '/home/data/documents/python/shish-bish/scripts')
+sys.path.insert(0, scripts_path)
 import player_logic as pl
 
 dices = {'Dice_1': 0, 'Dice_2': 0}
