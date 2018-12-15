@@ -17,7 +17,8 @@ dices = {'Dice_1': 0, 'Dice_2': 0}
 movement = 1
 circle = 0
 player = {'Green': 1, 'Yellow': 0, 'Blue': 0, 'Red': 0}
-file_name = '/home/data/documents/python/shish-bish/scripts/{}_circle.json'
+file_name = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], os.path.join('scripts', '{}_circle.json'))
+#file_name = '/home/data/documents/python/shish-bish/scripts/{}_circle.json'
 #order_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
 
 for i in logic.getCurrentScene().objects:
