@@ -5,9 +5,12 @@ import sys
 import os
 
 scripts_path = os.path.join(os.path.split(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])[0], 'scripts')
+scripts_path_export = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], 'scripts')
+#print('new path: ', os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])
 
 #sys.path.insert(0, '/home/data/documents/python/shish-bish/scripts')
 sys.path.insert(0, scripts_path)
+sys.path.insert(0, scripts_path_export)
 import player_logic as pl
 
 dices = {'Dice_1': 0, 'Dice_2': 0}

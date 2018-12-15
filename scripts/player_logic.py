@@ -304,15 +304,15 @@ class Move:
         return new_pos
 
     def setMarkerCircle(self, marker, new_pos):
-        print('set marker position')
+        # print('set marker position')
         marker_color = re.split(r'_', marker)[0]
 
         if nearlyEqual(self.markers[marker][0], self.marker_start[marker_color][0]) is True and \
                 nearlyEqual(self.markers[marker][1], self.marker_start[marker_color][1]) is True:
-            print('1st step to call func of writing ...')
+            # print('1st step to call func of writing ...')
             if nearlyEqual(self.markers[marker][0], new_pos[0]) is not True or \
                     nearlyEqual(self.markers[marker][1], new_pos[1]) is not True:
-                print('call func of writing json file')
+                # print('call func of writing json file')
                 # setCircle(marker, 1, self.file_name.format(marker_color))
                 self.circle = 1
 
@@ -601,7 +601,7 @@ class Move:
     def moveAcrossWC(self, marker, dice_num, new_pos):
         # print('start func move')
         if dice_num in list(self.marker_in_wc.keys()):
-            # print('dice number: ', dice_num)
+            print('dice number: ', dice_num)
             for i in list(self.wc_coord[dice_num].keys()):
                 if nearlyEqual(self.all_markers[marker][0], self.wc_coord[dice_num][i][0]) is True and \
                         nearlyEqual(self.all_markers[marker][1], self.wc_coord[dice_num][i][1]) is True:
