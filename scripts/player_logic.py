@@ -1,10 +1,13 @@
 #coding: utf-8
 
+import os
 import math
 import re
+import json
 
 # Choose more number on dices
 def chooseDiceNum(dices):
+    # print('choose dice')
     value_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
     if dices['Dice_1'] > dices['Dice_2']:
         value_move['value_big'] = dices['Dice_1']
@@ -12,6 +15,10 @@ def chooseDiceNum(dices):
     elif dices['Dice_2'] > dices['Dice_1']:
         value_move['value_big'] = dices['Dice_2']
         # value_move['value_big'] = dices['Dice_1']
+        value_move['value_small'] = dices['Dice_1']
+    # elif dices['Dice_2'] == ['Dice_1']:
+    else:
+        value_move['value_big'] = dices['Dice_2']
         value_move['value_small'] = dices['Dice_1']
         value_move['movement'] = 2
 
@@ -28,12 +35,29 @@ def nearlyEqual(x, y):
             if delta_x == delta_y or x == delta_y or delta_x == y or x == y:
                 return True
 
+def getCircle(file_name):
+    with open(file_name) as f:
+        marker_circle = json.load(f)
+
+    return marker_circle
+
+def setCircle(marker, circle, file_name):
+    with open(file_name) as f:
+        marker_circle = json.load(f)
+
+    marker_circle[marker] = circle
+
+    with open(file_name, 'w') as f:
+        json.dump(marker_circle, f)
+
 # Detect is other palyer markers can move
 def getMarkersMove(player_markers, all_markers, circle, marker, dice_num, marker_pos):
     new_pos = Move(player_markers, all_markers, circle).moveMarker(marker, dice_num)
     if nearlyEqual(new_pos[0][marker][0], marker_pos[0]) is True and nearlyEqual(new_pos[0][marker][1], marker_pos[1]) is True:
+        # print('false: ', new_pos[0])
         return False
     else:
+        # print('true: ', new_pos[0])
         return True
 
 class Move:
@@ -41,6 +65,10 @@ class Move:
         self.markers = markers
         self.all_markers = all_markers
         self.circle = circle
+        # os.path.join(os.path.split(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])[0]
+        # print(os.path.split(os.path.abspath(__file__))[0])
+        # self.file_name = '/home/data/documents/python/shish-bish/scripts/{}_circle.json'
+        self.file_name = os.path.join(os.path.split(os.path.abspath(__file__))[0], '{}_circle.json')
         #Left bottom: <Vector (-3.6412, 3.6616, 0.3728)>
         #Right bottom: <Vector (-3.6503, -3.6722, 0.3728)>
         #Right top: <Vector (3.6801, -3.6722, 0.3728)>
@@ -128,16 +156,19 @@ class Move:
         return new_pos
 
     def moveMarker(self, marker, dice_num):
+        marker_color = re.split(r'_', marker)[0]
         in_game = self.isMarkerInGame(marker)
         if in_game is True:
             self.setMarkerPos(marker, dice_num)
-            self.circle = 1
+            # self.circle = 1
         else:
             if dice_num == 6:
-                marker_color = re.split(r'_', marker)[0]
+                # marker_color = re.split(r'_', marker)[0]
                 if self.isMarkerAtHome(marker, marker_color) is None:
                     self.markers[marker] = self.marker_start[marker_color]
-                    self.circle = 0
+                    # self.circle = 0
+
+        # self.circle = getCircle(self.file_name.format(marker_color))[marker]
 
         # self.setMarkerPos(marker, dice_num)
         return (self.markers, self.all_markers, self.circle)
@@ -157,14 +188,18 @@ class Move:
         new_pos = self.isPosInputWC(new_pos)
         self.getWCMarker()
         new_pos = self.moveAcrossWC(marker, dice_num, new_pos)
-        new_pos = self.isPosOnStairs(new_pos)
+        # new_pos = self.isPosOnStairs(new_pos)
         self.isBitEnemyMarker(new_pos, marker)
         new_pos = self.setHomePos(new_pos, marker, dice_num)
         new_pos = self.moveAccrossHome(marker, dice_num, new_pos)
         if self.isWayFree(new_pos, dice_num, marker) is not False:
+            new_pos = self.isPosOnStairs(new_pos)
+            self.setMarkerCircle(marker, new_pos)
             self.markers[marker] = [new_pos[0], new_pos[1], self.Z]
         else:
             print('can not move there')
+
+        print('circle: ', self.circle)
 
         #self.isBitEnemyMarker(marker)
 
@@ -222,26 +257,31 @@ class Move:
         # print(points)
         marker_color = marker.split('_')[0]
         num = self.isMarkerComeHome(marker, points, marker_color)
-        # print('num: ', num)
+        print('num: ', num)
         # print('dice: ', dice_num)
         if num is not None:
+            # print('num: ', num)
             dice_num = dice_num - num
+            print('dice num: ', dice_num)
             if 0 < dice_num <= 4:
-                # print('1: ', dice_num)
+                print('1: ', dice_num)
                 new_pos[0] = self.markers_home[marker_color][dice_num-1][0]
                 new_pos[1] = self.markers_home[marker_color][dice_num-1][1]
             elif dice_num == 0:
-                # print('2: ', dice_num)
+                print('2: ', dice_num)
                 new_pos[0] = self.marker_start[marker_color][0]
                 new_pos[1] = self.marker_start[marker_color][1]
             elif dice_num < 0:
-                # print('3: ', dice_num)
+                print('3: ', dice_num)
                 new_pos[0] = self.markers_home[marker_color][(0-dice_num)-1][0]
                 new_pos[1] = self.markers_home[marker_color][(0-dice_num)-1][1]
-            # else:
-                # print('4: ', dice_num)
-                # new_pos[0] = self.markers[marker][0]
-                # new_pos[1] = self.markers[marker][1]
+            # elif dice_num > 4:
+            #     new_pos[0] = self.markers[marker][0]
+            #     new_pos[1] = self.markers[marker][1]
+            else:
+                print('4: ', dice_num)
+                new_pos[0] = self.markers[marker][0]
+                new_pos[1] = self.markers[marker][1]
 
         return new_pos
 
@@ -262,6 +302,19 @@ class Move:
                 new_pos[1] = self.markers_home[marker_color][pos+dice_num][1]
 
         return new_pos
+
+    def setMarkerCircle(self, marker, new_pos):
+        print('set marker position')
+        marker_color = re.split(r'_', marker)[0]
+
+        if nearlyEqual(self.markers[marker][0], self.marker_start[marker_color][0]) is True and \
+                nearlyEqual(self.markers[marker][1], self.marker_start[marker_color][1]) is True:
+            print('1st step to call func of writing ...')
+            if nearlyEqual(self.markers[marker][0], new_pos[0]) is not True or \
+                    nearlyEqual(self.markers[marker][1], new_pos[1]) is not True:
+                print('call func of writing json file')
+                # setCircle(marker, 1, self.file_name.format(marker_color))
+                self.circle = 1
 
     # Count excess to dice num
     def excessToDice(self, excess, step):
@@ -546,17 +599,23 @@ class Move:
                 return True
 
     def moveAcrossWC(self, marker, dice_num, new_pos):
+        # print('start func move')
         if dice_num in list(self.marker_in_wc.keys()):
+            # print('dice number: ', dice_num)
             for i in list(self.wc_coord[dice_num].keys()):
                 if nearlyEqual(self.all_markers[marker][0], self.wc_coord[dice_num][i][0]) is True and \
                         nearlyEqual(self.all_markers[marker][1], self.wc_coord[dice_num][i][1]) is True:
+                    print('get position in WC')
                     if dice_num == 1:
+                        print('1')
                         new_pos = [self.wc_coord[3][i][0], self.wc_coord[3][i][1]]
                         break
                     elif dice_num == 3:
+                        print('3')
                         new_pos = [self.wc_coord[6][i][0], self.wc_coord[6][i][1]]
                         break
                     elif dice_num == 6:
+                        print('6')
                         wc_out = self.setWCOut()
                         new_pos = [wc_out[i][0], wc_out[i][1]]
                         break

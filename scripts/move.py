@@ -4,8 +4,8 @@ import math
 import sys
 import os
 
-scripts_path = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], 'scripts')
-#print(scripts_path)
+scripts_path = os.path.join(os.path.split(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])[0], 'scripts')
+
 #sys.path.insert(0, '/home/data/documents/python/shish-bish/scripts')
 sys.path.insert(0, scripts_path)
 import player_logic as pl
@@ -14,7 +14,13 @@ dices = {'Dice_1': 0, 'Dice_2': 0}
 movement = 1
 circle = 0
 player = {'Green': 1, 'Yellow': 0, 'Blue': 0, 'Red': 0}
+file_name = '/home/data/documents/python/shish-bish/scripts/{}_circle.json'
 #order_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
+
+for i in logic.getCurrentScene().objects:
+    if 'marker' in i.name:
+        marker_color = i.name.split('_')[0]
+        pl.setCircle(i.name, 0, file_name.format(marker_color))
 
 def getOwner():
     controller = logic.getCurrentController()
@@ -61,11 +67,12 @@ def goDice():
         
     markers_list = getMarkersList(markers, marker_color)
         
+    
     if dices['Dice_1'] != 0 and dices['Dice_2'] != 0:
         for i in range(2):
             order_move = pl.chooseDiceNum(dices)
-            #print(order_move)
-            if isPlMarkersFree(markers_list[0], markers_list[1], order_move, circle) is not True:
+            res = isPlMarkersFree(markers_list[0], markers_list[1], order_move, circle)
+            if res is None:
                 for i in list(dices.keys()):
                     if dices[i] == order_move['value_big']:
                         dices[i] = 0
@@ -73,7 +80,8 @@ def goDice():
     #changePlayer(order_move)
         
 def chooseMarker():
-    global circle, movement, player
+    #global circle, movement, player
+    global movement, player, file_name
 
     object = getOwner()
     
@@ -91,7 +99,12 @@ def chooseMarker():
     marker_color = object.name.split('_')[0]
     
     markers_list = getMarkersList(markers, marker_color)
+
+    circle = pl.getCircle(file_name.format(marker_color))[object.name]
     
+    #print('object: ', object.name)
+    #print('circle: ', circle)
+        
     new_pos = pl.Move(markers_list[1], markers_list[0], circle).moveMarker(object.name, order_move['value_big'])
     
     for i in range(len(markers)):
@@ -99,14 +112,16 @@ def chooseMarker():
             if new_pos[1][markers[i].name] != markers[i].position:
                 markers[i].position = new_pos[1][markers[i].name]
     
+    circle = new_pos[2]
+    print(circle)
     if isPosChange(object, new_pos[0]) is True:
+        pl.setCircle(object.name, circle, file_name.format(marker_color))
         for i in list(dices.keys()):
             if order_move['value_big'] == dices[i]:
                 dices[i] = 0
                 break
         
     object.position = new_pos[0][object.name]
-    circle = new_pos[2]
     
     #changePlayer(order_move)
 
