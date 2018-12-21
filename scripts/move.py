@@ -3,6 +3,7 @@ from random import randint
 import math
 import sys
 import os
+import json
 
 scripts_path = os.path.join(os.path.split(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])[0], 'scripts')
 scripts_path_export = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], 'scripts')
@@ -17,14 +18,21 @@ dices = {'Dice_1': 0, 'Dice_2': 0}
 movement = 1
 circle = 0
 player = {'Green': 1, 'Yellow': 0, 'Blue': 0, 'Red': 0}
-file_name = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], os.path.join('scripts', '{}_circle.json'))
+#file_name = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], os.path.join('scripts', '{}_circle.json'))
+files = ['Green_circle.json', 'Blue_circle.json', 'Yellow_circle.json', 'Red_circle.json']
 #file_name = '/home/data/documents/python/shish-bish/scripts/{}_circle.json'
 #order_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
 
-for i in logic.getCurrentScene().objects:
-    if 'marker' in i.name:
-        marker_color = i.name.split('_')[0]
-        pl.setCircle(i.name, 0, file_name.format(marker_color))
+#for i in logic.getCurrentScene().objects:
+#    if 'marker' in i.name:
+#        marker_color = i.name.split('_')[0]
+#        pl.setCircle(i.name, 0, file_name.format(marker_color))
+
+for i in files:
+    with open(os.path.join(scripts_path_export, i)) as f:
+        markers = json.load(f)
+    for j in list(markers.keys()):
+        pl.setCircle(j, 0, os.path.join(scripts_path_export, i))
 
 def getOwner():
     controller = logic.getCurrentController()
@@ -85,7 +93,7 @@ def goDice():
         
 def chooseMarker():
     #global circle, movement, player
-    global movement, player, file_name
+    global movement, player, files, scripts_path_export
 
     object = getOwner()
     
@@ -103,8 +111,12 @@ def chooseMarker():
     marker_color = object.name.split('_')[0]
     
     markers_list = getMarkersList(markers, marker_color)
+    
+    for i in files:
+        if marker_color in i:
+            file_name = os.path.join(scripts_path_export, i)
 
-    circle = pl.getCircle(file_name.format(marker_color))[object.name]
+    circle = pl.getCircle(file_name)[object.name]
     
     #print('object: ', object.name)
     #print('circle: ', circle)
