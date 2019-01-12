@@ -8,19 +8,25 @@ import json
 # Choose more number on dices
 def chooseDiceNum(dices):
     # print('choose dice')
-    value_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
+    value_move = {'value_big': 0, 'value_small': 0, 'movement': 2}
     if dices['Dice_1'] > dices['Dice_2']:
         value_move['value_big'] = dices['Dice_1']
         value_move['value_small'] = dices['Dice_2']
+        # if dices['Dice_1'] != 0 and dices['Dice_2'] != 0:
+        value_move['movement'] = 1
     elif dices['Dice_2'] > dices['Dice_1']:
         value_move['value_big'] = dices['Dice_2']
         # value_move['value_big'] = dices['Dice_1']
         value_move['value_small'] = dices['Dice_1']
-    # elif dices['Dice_2'] == ['Dice_1']:
-    else:
+        # if dices['Dice_1'] != 0 and dices['Dice_2'] != 0:
+        value_move['movement'] = 1
+    elif dices['Dice_2'] == dices['Dice_1']:
+    # else:
         value_move['value_big'] = dices['Dice_2']
         value_move['value_small'] = dices['Dice_1']
         value_move['movement'] = 2
+        # if dices['Dice_1'] == 0 and dices['Dice_2'] == 0:
+        #     value_move['movement'] = 1
 
     return value_move
 
@@ -37,9 +43,9 @@ def nearlyEqual(x, y):
 
 def getCircle(file_name):
     with open(file_name) as f:
-        marker_circle = json.load(f)
+        markers_circle = json.load(f)
 
-    return marker_circle
+    return markers_circle
 
 def setCircle(marker, circle, file_name):
     with open(file_name) as f:
@@ -125,10 +131,10 @@ class Move:
                                      [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]+3*self.Y_step, self.Z],
                                      [self.marker_start['Yellow'][0], self.marker_start['Yellow'][1]+4*self.Y_step, self.Z]]}
 
-        self.marker_before_game = {'Green': [[-1.20, -0.77, self.Z], [-1.81, -0.78, self.Z], [-1.19, -1.37, self.Z], [-1.80, -1.37, self.Z]],
-                                   'Yellow': [[-0.67, 1.17, self.Z], [-0.70, 1.80, self.Z], [-1.31, 1.18, self.Z], [-1.31, 1.80, self.Z]],
-                                   'Blue': [[1.22, 0.70, self.Z], [1.88, 0.71, self.Z], [1.22, 1.32, self.Z], [1.87, 1.31, self.Z]],
-                                   'Red': [[0.72, -1.26, self.Z], [0.72, -1.89, self.Z], [1.32, -1.28, self.Z], [1.32, -1.89, self.Z]]}
+        self.marker_before_game = {'Green': [[-0.84, -0.71, self.Z], [-1.45, -0.71, self.Z], [-0.83, -1.31, self.Z], [-1.44, -1.31, self.Z]],
+                                   'Yellow': [[-0.67, 0.75, self.Z], [-0.70, 1.38, self.Z], [-1.31, 0.75, self.Z], [-1.31, 1.38, self.Z]],
+                                   'Blue': [[0.82, 0.7, self.Z], [1.48, 0.71, self.Z], [0.82, 1.32, self.Z], [1.47, 1.31, self.Z]],
+                                   'Red': [[0.72, -0.73, self.Z], [0.72, -1.36, self.Z], [1.32, -0.75, self.Z], [1.32, -1.37, self.Z]]}
 
         # self.wc_input = {'bot': [self.bot_X_border, round((self.right_Y_border + self.left_Y_border) + 3 * self.Y_step, 2), self.Z],
         #                  'left': [round((self.top_X_border + self.bot_X_border) + 3 * self.X_step, 2), self.left_Y_border, self.Z],
@@ -194,12 +200,11 @@ class Move:
         new_pos = self.moveAccrossHome(marker, dice_num, new_pos)
         if self.isWayFree(new_pos, dice_num, marker) is not False:
             new_pos = self.isPosOnStairs(new_pos)
+            # self.isBitEnemyMarker(new_pos, marker)
             self.setMarkerCircle(marker, new_pos)
             self.markers[marker] = [new_pos[0], new_pos[1], self.Z]
         else:
             print('can not move there')
-
-        print('circle: ', self.circle)
 
         #self.isBitEnemyMarker(marker)
 
@@ -257,12 +262,11 @@ class Move:
         # print(points)
         marker_color = marker.split('_')[0]
         num = self.isMarkerComeHome(marker, points, marker_color)
-        print('num: ', num)
         # print('dice: ', dice_num)
         if num is not None:
+            self.at_home = True
             # print('num: ', num)
             dice_num = dice_num - num
-            print('dice num: ', dice_num)
             if 0 < dice_num <= 4:
                 print('1: ', dice_num)
                 new_pos[0] = self.markers_home[marker_color][dice_num-1][0]
@@ -404,7 +408,10 @@ class Move:
     # Detect way for free
     def isWayFree(self, new_pos, dice_num, marker):
         points = self.chooseWay(new_pos, dice_num, marker)
-        # print(points)
+        # print('==========')
+        # print('marker: ', marker)
+        # print('way points: ', points)
+        # print('==========')
         for i in self.corners:
             if nearlyEqual(i[0], new_pos[0]) is True and nearlyEqual(i[1], new_pos[1]) is True:
                 points[0].append(i[0])
@@ -450,9 +457,8 @@ class Move:
                     nearlyEqual(self.markers[marker][0], self.bot_X_border) is True:
                 points[1].append(self.markers[marker][1] + operator[1] * self.Y_step)
                 points[0].append(self.markers[marker][0])
-                j = 0
+                j = 1
                 for i in range(2, dice_num+1):
-                    # print(i, points)
                     if nearlyEqual(points[1][-1], self.left_Y_border) is True or nearlyEqual(points[1][-1], self.right_Y_border) is True:
                         points[1].append(points[1][-1])
                         points[0].append(self.markers[marker][0] + operator[0] * i * self.X_step)
@@ -465,7 +471,7 @@ class Move:
                     nearlyEqual(self.markers[marker][1], self.left_Y_border) is True:
                 points[0].append(self.markers[marker][0] + operator[0] * self.X_step)
                 points[1].append(self.markers[marker][1])
-                j = 0
+                j = 1
                 for i in range(2, dice_num+1):
                     if nearlyEqual(points[0][-1], self.bot_X_border) is True or nearlyEqual(points[0][-1], self.top_X_border) is True:
                         points[0].append(points[0][-1])
@@ -475,19 +481,44 @@ class Move:
                         points[0].append(self.markers[marker][0] + operator[0] * j * self.X_step)
                         points[1].append(self.markers[marker][1])
 
-        return points
+        # last_pos = [points[0][-1], points[1][-1]]
+        # last_pos = self.isPosOnStairs(last_pos)
+        # points[0][-1] = last_pos[0]
+        # points[1][-1] = last_pos[1]
 
-    def createArrayOfPointsNew(self, new_pos, dice_num, marker):
-        operator = self.getOperator(self.markers[marker][0], self.markers[marker][1])
-        points = [[], []]
-        step = 1
-        while step < dice_num + 1:
-            pass
+        if self.circle == 1:
+            marker_color = marker.split('_')[0]
+            for i in list(self.marker_start.keys()):
+                if marker_color == i:
+                    points = self.createArrayOfPointsHome(marker_color, points, self.marker_start[i])
+
+        return points
 
     def chooseLogicForArray(self, marker):
         for i in list(self.marker_in_wc.keys()):
             if marker in self.marker_in_wc[i]:
                 return True
+
+    def createArrayOfPointsHome(self, marker_color, points, start_home):
+        if nearlyEqual(self.bot_X_border, start_home[0]) is True or nearlyEqual(self.top_X_border, start_home[0]) is True:
+            for i in range(len(points[0])):
+                if nearlyEqual(self.bot_X_border, points[0][i]) is True or nearlyEqual(self.top_X_border, points[0][i]) is True:
+                    k = 0
+                    for j in range(i+2, len(points[0])):
+                        points[0][j] = self.markers_home[marker_color][k][0]
+                        points[1][j] = points[1][i-1]
+                        k = k + 1
+
+        elif nearlyEqual(self.right_Y_border, start_home[1]) is True or nearlyEqual(self.left_Y_border, start_home[1]) is True:
+            for i in range(len(points[1])):
+                if nearlyEqual(self.bot_X_border, points[1][i]) is True or nearlyEqual(self.top_X_border, points[1][i]) is True:
+                    k = 0
+                    for j in range(i+2, len(points[1])):
+                        points[1][j] = self.markers_home[marker_color][k][1]
+                        points[0][j] = points[0][i]
+                        k = k + 1
+
+        return points
 
     '''def isBitEnemyMarker(self, marker):
         for i in list(self.all_markers.keys()):
@@ -499,6 +530,8 @@ class Move:
                     return True'''
 
     def isBitEnemyMarker(self, new_pos, marker):
+        dice_num = 0
+        new_pos = self.isPosOnStairs(new_pos)
         for i in list(self.all_markers.keys()):
             if i not in list(self.markers.keys()):
                 if nearlyEqual(self.all_markers[i][0], new_pos[0]) is True and \
@@ -511,7 +544,7 @@ class Move:
                                 dice_num = j
                                 break
                     result = self.moveAcrossWC(i, dice_num, self.all_markers[i])
-                    if result is None:
+                    if nearlyEqual(result[0], new_pos[0]) is True and nearlyEqual(result[1], new_pos[1]) is True:
                         keys = i.split('_')
                         self.all_markers[i] = self.marker_before_game[keys[0]][int(keys[-1])-1]
                     else:
@@ -558,14 +591,30 @@ class Move:
         #             new_pos = self.posOnUpStairs(i)
         #         elif 'down' in i:
         #             new_pos = self.posOnDownStairs(i)
+        position = new_pos
         for i in list(self.stairs.keys()):
             if nearlyEqual(new_pos[0], self.stairs[i][0]) is True and nearlyEqual(new_pos[1], self.stairs[i][1]) is True:
                 if 'up' in i:
-                    new_pos = self.posOnUpStairs(i)
+                    for j in list(self.markers.keys()):
+                        if nearlyEqual(self.markers[j][0], self.posOnUpStairs(i)[0]) is not True and \
+                                nearlyEqual(self.markers[j][1], self.posOnUpStairs(i)[1]) is not True:
+                            position = self.posOnUpStairs(i)
+                        elif nearlyEqual(self.markers[j][0], self.posOnUpStairs(i)[0]) is True and \
+                                nearlyEqual(self.markers[j][1], self.posOnUpStairs(i)[1]) is True:
+                            position = new_pos
                     break
+
                 elif 'down' in i:
-                    new_pos = self.posOnDownStairs(i)
+                    for j in list(self.markers.keys()):
+                        if nearlyEqual(self.markers[j][0], self.posOnDownStairs(i)[0]) is not True and \
+                                nearlyEqual(self.markers[j][1], self.posOnDownStairs(i)[1]) is not True:
+                            position = self.posOnDownStairs(i)
+                        elif nearlyEqual(self.markers[j][0], self.posOnDownStairs(i)[0]) is True and \
+                                nearlyEqual(self.markers[j][1], self.posOnDownStairs(i)[1]) is True:
+                            position = new_pos
                     break
+
+        new_pos = position
 
         return new_pos
 

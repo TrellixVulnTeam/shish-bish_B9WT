@@ -1,14 +1,13 @@
 from bge import logic, render, types
+import bpy
+import mathutils
 from random import randint
 import math
 import sys
 import os
-import json
 
 scripts_path = os.path.join(os.path.split(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])[0], 'scripts')
 scripts_path_export = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], 'scripts')
-#print('new path: ', os.path.split(os.path.split(os.path.abspath(__file__))[0])[0])
-
 #sys.path.insert(0, '/home/data/documents/python/shish-bish/scripts')
 sys.path.insert(0, scripts_path)
 sys.path.insert(0, scripts_path_export)
@@ -18,21 +17,17 @@ dices = {'Dice_1': 0, 'Dice_2': 0}
 movement = 1
 circle = 0
 player = {'Green': 1, 'Yellow': 0, 'Blue': 0, 'Red': 0}
+colors = {'Green': [0, 0.22, 0, 1], 'Yellow': [0.8, 0.5, 0, 1], 'Blue': [0, 0, 0.8, 1], 'Red': [1, 0, 0, 1]}
 #file_name = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], os.path.join('scripts', '{}_circle.json'))
-files = ['Green_circle.json', 'Blue_circle.json', 'Yellow_circle.json', 'Red_circle.json']
+#file_name = os.path.join(scripts_path_export, '{}_circle.json')
+file_name = os.path.join(scripts_path, '{}_circle.json')
 #file_name = '/home/data/documents/python/shish-bish/scripts/{}_circle.json'
 #order_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
 
-#for i in logic.getCurrentScene().objects:
-#    if 'marker' in i.name:
-#        marker_color = i.name.split('_')[0]
-#        pl.setCircle(i.name, 0, file_name.format(marker_color))
-
-for i in files:
-    with open(os.path.join(scripts_path_export, i)) as f:
-        markers = json.load(f)
-    for j in list(markers.keys()):
-        pl.setCircle(j, 0, os.path.join(scripts_path_export, i))
+for i in logic.getCurrentScene().objects:
+    if 'marker' in i.name:
+        marker_color = i.name.split('_')[0]
+        pl.setCircle(i.name, 0, file_name.format(marker_color))
 
 def getOwner():
     controller = logic.getCurrentController()
@@ -42,7 +37,11 @@ def getOwner():
 def getScene():
     markers = logic.getCurrentScene().objects
     
-    return markers
+    for i in markers:
+        if i.name == 'Traffic':
+            traffic = i
+    
+    return (markers, traffic)
 
 def goDice():
     global dices, player
@@ -70,7 +69,7 @@ def goDice():
         local = False
         object.applyRotation(rotation, local)
         
-    markers = getScene()
+    markers, traffic = getScene()
     
     for i in list(player.keys()):
         if player[i] == 1:
@@ -88,14 +87,28 @@ def goDice():
                 for i in list(dices.keys()):
                     if dices[i] == order_move['value_big']:
                         dices[i] = 0
-            
-    #changePlayer(order_move)
+    
+    order_move = pl.chooseDiceNum(dices)
+    print('dice, order move: ', order_move)
+    changePlayer(order_move, traffic)
+    print('dice, player: ', player)
         
 def chooseMarker():
-    #global circle, movement, player
-    global movement, player, files, scripts_path_export
+    global player
 
-    object = getOwner()
+    object = getOwner()    
+    marker_color = object.name.split('_')[0]
+    
+    if player[marker_color] == 1:
+        doMove(object, marker_color)
+    else:
+        print('*** wrong marker ***')
+        
+def doMove(object, marker_color):    
+    #global circle, movement, player
+    global movement, player, file_name
+
+    #object = getOwner()
     
     order_move = pl.chooseDiceNum(dices)
     #print(order_move)
@@ -104,19 +117,15 @@ def chooseMarker():
     player_markers = {}
     all_markers = {}
     
-    markers = getScene()
+    markers, traffic = getScene()
     #markers[2].position = [0.01, 3.66, 0.37]
     #markers[2].position = [-3.04, 1.83, 0.37]
     #markers[2].position = [-3.65, 3.04, 0.37]
-    marker_color = object.name.split('_')[0]
+    #marker_color = object.name.split('_')[0]
     
     markers_list = getMarkersList(markers, marker_color)
-    
-    for i in files:
-        if marker_color in i:
-            file_name = os.path.join(scripts_path_export, i)
 
-    circle = pl.getCircle(file_name)[object.name]
+    circle = pl.getCircle(file_name.format(marker_color))[object.name]
     
     #print('object: ', object.name)
     #print('circle: ', circle)
@@ -135,11 +144,14 @@ def chooseMarker():
         for i in list(dices.keys()):
             if order_move['value_big'] == dices[i]:
                 dices[i] = 0
+                order_move['value_big'] = 0
                 break
         
     object.position = new_pos[0][object.name]
-    
-    #changePlayer(order_move)
+            
+    print('move, order move: ', order_move)
+    changePlayer(order_move, traffic)
+    print('move, player: ', player)
 
 #Create lists for logic all_markers - all markers from field, markers - markers that use by current player
 def getMarkersList(markers, marker_color):
@@ -168,13 +180,19 @@ def isPlMarkersFree(all_markers, player_markers, order_move, circle):
                 #print('ok')
                 return True
             
-def changePlayer(order_move):
-    global player
+def changePlayer(order_move, traffic):
+    global player, movement, colors
     
-    if order_move['value_big'] == 0 and order_move['value_small'] == 0 and order_move['movement'] == 1:
+    #if order_move['value_big'] == 0 and order_move['value_small'] == 0 and order_move['movement'] == 1:
+    if order_move['value_big'] == 0 and order_move['value_small'] == 0 and movement == 1:
         pl_keys = list(player.keys())
         for i in range(len(pl_keys)):
             if player[pl_keys[i]] == 1:
                 player[pl_keys[i]] = 0
-                player[pl_keys[i+1]] = 1
+                try:
+                    player[pl_keys[i+1]] = 1
+                    traffic.color = colors[pl_keys[i+1]]
+                except IndexError:
+                    player[pl_keys[0]] = 1
+                    traffic.color = colors[pl_keys[0]]
                 break
