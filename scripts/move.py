@@ -44,7 +44,7 @@ def getScene():
     return (markers, traffic)
 
 def goDice():
-    global dices, player
+    global dices, player, movement
     
     game_mouse = logic.mouse
     event_list = game_mouse.events
@@ -87,11 +87,15 @@ def goDice():
                 for i in list(dices.keys()):
                     if dices[i] == order_move['value_big']:
                         dices[i] = 0
-    
-    order_move = pl.chooseDiceNum(dices)
-    print('dice, order move: ', order_move)
-    changePlayer(order_move, traffic)
-    print('dice, player: ', player)
+        
+        if dices['Dice_1'] == 0 and dices['Dice_2'] == 0:
+            print('===== goDice =====')
+            order_move['value_big'], order_move['value_small'] = (dices['Dice_1'], dices['Dice_2'])
+            #order_move = pl.chooseDiceNum(dices)
+            print('dice, order move: ', order_move)
+            movement = order_move['movement']
+            changePlayer(order_move, traffic)
+            print('dice, player: ', player)
         
 def chooseMarker():
     global player
@@ -182,6 +186,7 @@ def isPlMarkersFree(all_markers, player_markers, order_move, circle):
             
 def changePlayer(order_move, traffic):
     global player, movement, colors
+    print(movement)
     
     #if order_move['value_big'] == 0 and order_move['value_small'] == 0 and order_move['movement'] == 1:
     if order_move['value_big'] == 0 and order_move['value_small'] == 0 and movement == 1:
