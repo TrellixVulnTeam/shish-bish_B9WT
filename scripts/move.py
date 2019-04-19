@@ -1,6 +1,6 @@
 from bge import logic, render, types
-import bpy
-import mathutils
+# import bpy
+# import mathutils
 from random import randint
 import math
 import sys
@@ -16,18 +16,51 @@ import player_logic as pl
 dices = {'Dice_1': 0, 'Dice_2': 0}
 movement = 1
 circle = 0
-player = {'Green': 1, 'Yellow': 0, 'Blue': 0, 'Red': 0}
-colors = {'Green': [0, 0.22, 0, 1], 'Yellow': [0.8, 0.5, 0, 1], 'Blue': [0, 0, 0.8, 1], 'Red': [1, 0, 0, 1]}
-#file_name = os.path.join(os.path.split(os.path.split(os.path.abspath(__file__))[0])[0], os.path.join('scripts', '{}_circle.json'))
-#file_name = os.path.join(scripts_path_export, '{}_circle.json')
-file_name = os.path.join(scripts_path, '{}_circle.json')
-#file_name = '/home/data/documents/python/shish-bish/scripts/{}_circle.json'
-#order_move = {'value_big': 0, 'value_small': 0, 'movement': 1}
+# player = {'Green': 1, 'Yellow': 0, 'Blue': 0, 'Red': 0}
+player = {}
+colors = {'Green': [0, 0.22, 0], 'Yellow': [0.8, 0.5, 0], 'Blue': [0, 0, 0.8], 'Red': [1, 0, 0]}
+#colors = {'Green': [0, 0.22, 0, 1], 'Yellow': [0.8, 0.5, 0, 1], 'Blue': [0, 0, 0.8, 1], 'Red': [1, 0, 0, 1]}
+file_name = os.path.join(scripts_path_export, '{}_circle.json')
+#file_name = os.path.join(scripts_path, '{}_circle.json')
+#players_file = os.path.join(scripts_path, 'players')
+players_file = os.path.join(scripts_path_export, 'players')
+
+print('players_file: ', players_file)
+print('GAME')
+print(logic.getCurrentScene().objects.name)
 
 for i in logic.getCurrentScene().objects:
     if 'marker' in i.name:
         marker_color = i.name.split('_')[0]
         pl.setCircle(i.name, 0, file_name.format(marker_color))
+
+def delText():
+    setMarkers()
+    types.KX_LightObject(logic.getCurrentScene().objects['Sun']).energy = 1.0
+    object = getOwner()
+    object.endObject()
+
+def setMarkers():
+    global player, players_file
+
+    colors = ['Green', 'Yellow', 'Blue', 'Red']
+    print(players_file)
+    with open(players_file, 'r') as f:
+        num_player = int(f.read())
+
+    for i in range(num_player):
+        if i == 0:
+            player[colors[i]] = 1
+        else:
+            player[colors[i]] = 0
+
+    markers, traffic = getScene()
+
+    for i in colors:
+        if i not in list(player.keys()):
+            for j in markers:
+                if i == j.name.split('_')[0]:
+                    j.endObject()
 
 def getOwner():
     controller = logic.getCurrentController()
@@ -43,8 +76,18 @@ def getScene():
     
     return (markers, traffic)
 
+def isGameStart():
+    try:
+        logic.getCurrentScene().objects['Text']
+    except KeyError:
+        goDice()
+    else:
+        print('push text')
+
 def goDice():
     global dices, player, movement
+    
+    #print(logic.getCurrentScene().objects)
     
     game_mouse = logic.mouse
     event_list = game_mouse.events
@@ -196,8 +239,8 @@ def changePlayer(order_move, traffic):
                 player[pl_keys[i]] = 0
                 try:
                     player[pl_keys[i+1]] = 1
-                    traffic.color = colors[pl_keys[i+1]]
+                    traffic.meshes[0].materials[0].diffuseColor = colors[pl_keys[i+1]]
                 except IndexError:
                     player[pl_keys[0]] = 1
-                    traffic.color = colors[pl_keys[0]]
+                    traffic.meshes[0].materials[0].diffuseColor = colors[pl_keys[0]]
                 break
